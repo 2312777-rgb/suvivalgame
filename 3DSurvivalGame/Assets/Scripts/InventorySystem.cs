@@ -2,10 +2,12 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.UI;
 
 public class InventorySystem : MonoBehaviour
 {
-
+    public static CraftingSystem instance { get; private set; }
+    public GameObject ItemInfoUI;
     public static InventorySystem Instance { get; set; }
 
     public GameObject inventoryScreenUI;
@@ -14,7 +16,11 @@ public class InventorySystem : MonoBehaviour
     private GameObject itemToAdd;
     private GameObject whatSlotToEquip;
     public bool isOpen;
-   // public bool isFull;
+    // public bool isFull;
+
+    public GameObject pickupAlert;
+    public Text pickupName;
+    public Image pickupImage;
 
     private void Awake()
     {
@@ -33,6 +39,7 @@ public class InventorySystem : MonoBehaviour
     {
         isOpen = false;
         PopulateSlotList();
+        Cursor.visible = false;
 
     }
     private void PopulateSlotList()
@@ -56,6 +63,9 @@ public class InventorySystem : MonoBehaviour
             Debug.Log("i is pressed");
             inventoryScreenUI.SetActive(true);
             Cursor.lockState = CursorLockMode.None;
+            Cursor.visible = true;
+            SelectionManager.instance.DisableSelection();
+            SelectionManager.instance.GetComponent<SelectionManager>().enabled = false;
             isOpen = true;
 
         }
@@ -67,6 +77,9 @@ public class InventorySystem : MonoBehaviour
             if (!CraftingSystem.instance.isOpen)
             {
                 Cursor.lockState = CursorLockMode.Locked;
+                Cursor.visible = false;
+                SelectionManager.instance.EnableSelection();
+                SelectionManager.instance.GetComponent<SelectionManager>().enabled = true;
             }
             isOpen = false;
         }
@@ -74,9 +87,17 @@ public class InventorySystem : MonoBehaviour
     public void AddToInventory(String itemName)
     {
             whatSlotToEquip = FindNextEmtySlot();
+
             itemToAdd = Instantiate(Resources.Load<GameObject>(itemName),whatSlotToEquip.transform.position, whatSlotToEquip.transform.rotation);
             itemToAdd.transform.SetParent(whatSlotToEquip.transform);
             itemlist.Add(itemName);
+
+            ReCaculateList();
+            CraftingSystem.instance.RefreshNeededItems();
+
+            Sprite sprite = itemToAdd.GetComponent<Image>().sprite;
+            TriggerPickPopUp(itemName, sprite);
+
 
     }    
     public bool CheckifFull()
@@ -96,9 +117,15 @@ public class InventorySystem : MonoBehaviour
         else
         {
             return false;
-        }
+        } 
 
     }
+    void TriggerPickPopUp(string itemName, Sprite itemSprite)
+    {
+        pickupAlert.SetActive(true); 
+        pickupName.text = itemName;
+        pickupImage.sprite = itemSprite;
+    }    
     private GameObject FindNextEmtySlot()
     {
         foreach(GameObject slot in slotlist)
